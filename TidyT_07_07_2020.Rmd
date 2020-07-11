@@ -9,10 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r library}
+```{r library, include = FALSE}
 library(ggridges)
-library(tidyverse)
+library(grid)
 library(gridExtra)
+library(knitr)
+library(tidyverse)
 ```
 
 ```{r cleaningscript, include=FALSE}
@@ -106,7 +108,8 @@ proc_methods <- all_ratings %>%
   # Remove NA in processing methods
   filter(!is.na(processing_method),
   # Remove processing method 'other'
-         !processing_method == "Other") %>%
+         !processing_method == "Other",
+         species == "Arabica") %>%
   select(species, country_of_origin, processing_method:cupper_points, total_cup_points)
 ```
 
@@ -114,6 +117,7 @@ proc_methods <- all_ratings %>%
 ```{r proc-wider}
 proc_wider <- proc_methods %>%
   # Group grade scores into one column
+  ## For plotting
   pivot_longer(cols = aroma:cupper_points,
                names_to = "grade",
                values_to = "grade_score")
@@ -122,31 +126,37 @@ proc_wider <- proc_methods %>%
 ## Density Plot for Total Cup Points for each Processing Method
 
 ```{r proc-density, message = FALSE}
-require(ggridges)
-
 p1 <- proc_wider %>%
   ggplot(aes(x = total_cup_points,
              y = processing_method,
              fill = processing_method)) +
+  xlab("Total Cup Points") +
   stat_density_ridges(quantile_lines = TRUE,
                       quantiles = 0.5,
                       scale = 0.9,
-                      alpha = 0.5
+                      alpha = 0.5,
+                      point_shape = '|'
                       ) +
   scale_x_continuous(breaks = seq(50, 100, by = 5),
                      labels = c(seq(50, 100, by = 5))) +
   scale_fill_manual(values = c("#bcbc8f", "#8fbc8f", "#8f8fbc", "#bc8fbc")) +
-  theme_classic() +
-  theme(legend.position = "none")
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.title = element_blank()) +
+  ggtitle("Total cup points distribution for each processing method") +
+  theme(plot.title = element_text(size = 10, face = "bold.italic"))
 
 p1
 ```
 
-```{r}
+```{r proc_total_summary, message = FALSE}
+# Summarise total cup points for each processing method
 proc_total_summ <- proc_wider %>%
-                    group_by(processing_method) %>%
-                    summarise(count = n(),
-                              avg_total_cup_pts = mean(total_cup_points))
+  group_by(processing_method) %>%
+  summarise(count = n(),
+            avg_total_cup_pts = mean(total_cup_points)) %>%
+  # Round to 2 decimal places
+  mutate_if(is.numeric, round, 2) 
 ```
 
 ## Lollipop chart of each quality for each processing method
@@ -181,24 +191,39 @@ p2 <- proc_summary %>%
   geom_text(color = "white", size = 2, label = round(proc_summary$avg_score, 2)) +
   scale_colour_manual(values = c("#bcbc8f", "#8fbc8f", "#8f8fbc", "#bc8fbc")) +
   facet_wrap(~ grade,
-             nrow = 5,
-             scales = "fixed") +
-  theme_classic() +
-  theme(legend.position = "none") 
+             nrow = 5
+             ) +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.title = element_blank()) +
+  ggtitle("Average Grade Score for Each Processing Method") +
+  theme(plot.title = element_text(size = 10, face = "bold.italic"))
 
 p2
 ```
 
-```{r}
-library(ggpubr) 
-theme_set(theme_pubr())
+```{r merge-plots, fig.height = 8, fig.width = 12, fig.align = "center"}
+ss <- proc_total_summ %>%
+  # Rename columns
+  rename('Processing Method' = processing_method,
+         'Coffee sampled' = count,
+         'Avg Total Cup Points'= avg_total_cup_pts)
 
-test <- ggpubr::ggtexttable(proc_total_summ, rows = NULL, 
-                        theme = ttheme("mOrange"))
+# Plot processing total cup points summary table with tableGrob
+ss <- tableGrob(ss, 
+                # Remove row numbers
+                rows = NULL) 
 
-ggarrange(p1, test,
-          nrow = 2)
+## Combine plots and tables
+grid.arrange(p1,
+             ss,
+             p2,
+             ncol = 2,
+             nrow = 2, 
+             layout_matrix = cbind(c(1,2), 3), 
+             heights = c(10, 6),
+             widths = c(6, 7),
+             top= grid::textGrob("Coffee Quality of Arabica Coffee Beans Across Four Processing Methods",
+                                 gp=gpar(fontsize = 20, col = "#a15016", fontface="bold.italic"))
+             )
 ```
-
-2. Why does most restaurants Arabica beans over Robusta beans? What is the difference in terms of quality?
-
