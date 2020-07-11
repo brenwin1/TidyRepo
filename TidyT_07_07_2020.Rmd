@@ -1,5 +1,5 @@
 ---
-title: "Coffee Ratings"
+title: "What affects the quality of coffee?"
 author: "Brendi"
 date: "07/07/2020"
 output: html_document
@@ -129,6 +129,13 @@ coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatasci
   ))
 ```
 
+# Introduction
+As coffee aficionados, it always pique my curiousity as to what makes coffee better. 
+
+Luckily, we came across this coffee ratings data set from `#TidyTuesday` challenge which we knew we had to analyze the data. Data set consist of scores from coffee cupping(tasting) done by professionals (although one doesn't have to be a professional to do so).  
+
+To do so, we compared coffee ratings across countries. Since the different countries have different harvesting periods, coffee bean types/colour, altitude, variety etc. 
+
 
 # Coffee quality across different countries
 
@@ -138,16 +145,15 @@ coffee_ratings %>%
   group_by(species) %>% 
   count(species)
 ```
-- Note Species in dataset
-  - Arabica: 1311 observations // Robusta 28 observations
 
 ```{r, echo = FALSE}
-# Where are most samples from?
+# Top 10 coffee samples
 coffee_ratings %>% 
   filter(!is.na(country_of_origin)) %>% 
   group_by(country_of_origin) %>% 
   count(sort = TRUE) %>% 
-  knitr::kable(caption = "where are most samples from?") %>% 
+  head(10) %>% 
+  knitr::kable(caption = "Top 10 countries from which coffee is sampled") %>% 
   kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
@@ -225,9 +231,9 @@ for(i in 1:19){
 }
 ```
 
-> As observed in the radarcharts above, coffee profiles (depicted by the radar chart's shape) across countries appear similar. It is hard to tell for example Ethiopia is rated the highest across most categories. 
-
-> Median scores of each category in each country were used in the plot.
+As observed in the radarcharts above, coffee profiles (depicted by the radar chart's shape) across countries appear very similar!   
+It is hard to tell for example Ethiopia is rated the highest across most categories.   
+Median scores of each category in each country were used in the plot.
 
 
 ```{r}
@@ -260,22 +266,21 @@ radarchart(data,
            )
 ```
 
-> Supported by the radar chart above where radarcharts of individual countries are plotted overlapping one another, we see that there is very minor difference between countries.
+Supported by the radar chart above where radarcharts of individual countries are plotted overlapping one another. It is pretty difficult to tell difference in quality between countries since they all overlap very nicely. This implies a similar coffee profile in all the countries.
 
-> All these despite having different growing conditions such as altitude, harvesting period, types/colour of coffee beans etc.
-
-> India scored 7.75 in sweetness while the rest of countries scored 10. 
+All these despite having different growing conditions such as altitude, harvesting period, types/colour of coffee beans, variety of beans etc.
 
 
+# Does processing method influence coffee flavours and quality?
 
-# 1. Does processing method influence coffee flavours and quality?
+Next we asked ourselves: maybe processing method would make the difference? which led us to the following analysis. 
 
-[Characteristics of coffee in different processing methods](https://capecoffeebeans.co.za/blogs/cape-coffee-blog/77091524-7-factors-that-influence-coffee-flavour)  
+We found different [characteristics of coffee using different processing methods](https://capecoffeebeans.co.za/blogs/cape-coffee-blog/77091524-7-factors-that-influence-coffee-flavour)  
 1. Washed/Wet: Tend to have higher acidity and clarity  
 2. Natural/Dry: Traditional african method, tend to have fruity flavour and low acidity; Higher risk of crop spoilage.  
 3. Pulped natural/Honey: Collection of wet& dry methods  
 
-```{r clean-proc}
+```{r clean-proc, include = FALSE}
 proc_methods <- coffee_ratings %>%
   # Remove NA in processing methods
   filter(!is.na(processing_method),
@@ -286,7 +291,7 @@ proc_methods <- coffee_ratings %>%
 ```
 
 
-```{r proc-wider}
+```{r proc-wider, include = FALSE}
 proc_wider <- proc_methods %>%
   # Group grade scores into one column
   ## For plotting
@@ -295,9 +300,10 @@ proc_wider <- proc_methods %>%
                values_to = "grade_score")
 ```
 
-### Plot 1: Density Plot for Total Cup Points of each Processing Method
 
-```{r proc-density, message = FALSE}
+```{r proc-density, message = FALSE, include = FALSE}
+# Plot 1: Total cup points distribution for each processing method
+
 p1 <- proc_wider %>%
   ggplot(aes(x = total_cup_points,
              y = processing_method,
@@ -331,9 +337,10 @@ proc_total_summ <- proc_wider %>%
   mutate_if(is.numeric, round, 2) 
 ```
 
-### Plot 2: Lollipop chart of each grade quality of each processing method
 
 ```{r proc-summary, message = FALSE}
+# Plot 2: Lollipop chart of each grade quality of each processing method
+
 # Mean grade score for each processing_method
 proc_summary <- proc_methods %>%
   group_by(processing_method) %>%
@@ -374,8 +381,6 @@ p2 <- proc_summary %>%
 p2
 ```
 
-### Merging plots 1 and 2
-
 ```{r merge-plots, fig.height = 8, fig.width = 12, fig.align = "center"}
 ss <- proc_total_summ %>%
   # Rename columns
@@ -401,3 +406,18 @@ grid.arrange(p1,
                                  gp=gpar(fontsize = 20, col = "#a15016", fontface="bold.italic"))
              )
 ```
+To our surprise, all processing method fared almost similarly! As shown on left-side figure, Washed/Wet and Natural/Dry are less erratic, they have almost equal average scores. 
+
+We then break them down into the different categories. They also achieved very similar scores in all categories!
+
+
+# Conclusion
+We found that coffee beans performed rather similarly regardless of different factors in growing coffee beans across countries and even processing method. The best rated coffee beans only scored better by a small margin. In other words, coffee is coffee! 
+
+
+
+
+
+
+
+
