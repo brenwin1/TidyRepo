@@ -1,6 +1,6 @@
 ---
 title: "Coffee Ratings"
-author: "Brenwin"
+author: "Brendi"
 date: "07/07/2020"
 output: html_document
 ---
@@ -9,10 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
-```{r libraries, include = FALSE}
+```{r library, include = FALSE}
 library(tidyverse)
-library(fmsb) # for radarchart
 library(colormap)
+library(fmsb) # for radarchart
+library(ggridges)
+library(grid)
+library(gridExtra)
 library(knitr)
 library(readr)
 ```
@@ -47,65 +50,73 @@ coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatasci
 raw_arabica <- read_csv("https://raw.githubusercontent.com/jldbc/coffee-quality-database/master/data/arabica_data_cleaned.csv") %>% 
   janitor::clean_names()
 
-raw_robusta <- read_csv("https://raw.githubusercontent.com/jldbc/coffee-quality-database/master/data/robusta_data_cleaned.csv",
-                        col_types = cols(
-                          X1 = col_double(),
-                          Species = col_character(),
-                          Owner = col_character(),
-                          Country.of.Origin = col_character(),
-                          Farm.Name = col_character(),
-                          Lot.Number = col_character(),
-                          Mill = col_character(),
-                          ICO.Number = col_character(),
-                          Company = col_character(),
-                          Altitude = col_character(),
-                          Region = col_character(),
-                          Producer = col_character(),
-                          Number.of.Bags = col_double(),
-                          Bag.Weight = col_character(),
-                          In.Country.Partner = col_character(),
-                          Harvest.Year = col_character(),
-                          Grading.Date = col_character(),
-                          Owner.1 = col_character(),
-                          Variety = col_character(),
-                          Processing.Method = col_character(),
-                          Fragrance...Aroma = col_double(),
-                          Flavor = col_double(),
-                          Aftertaste = col_double(),
-                          Salt...Acid = col_double(),
-                          Balance = col_double(),
-                          Uniform.Cup = col_double(),
-                          Clean.Cup = col_double(),
-                          Bitter...Sweet = col_double(),
-                          Cupper.Points = col_double(),
-                          Total.Cup.Points = col_double(),
-                          Moisture = col_double(),
-                          Category.One.Defects = col_double(),
-                          Quakers = col_double(),
-                          Color = col_character(),
-                          Category.Two.Defects = col_double(),
-                          Expiration = col_character(),
-                          Certification.Body = col_character(),
-                          Certification.Address = col_character(),
-                          Certification.Contact = col_character(),
-                          unit_of_measurement = col_character(),
-                          altitude_low_meters = col_double(),
-                          altitude_high_meters = col_double(),
-                          altitude_mean_meters = col_double()
-                        )) %>% 
-  janitor::clean_names() %>% 
-  rename(acidity = salt_acid, sweetness = bitter_sweet,
-         aroma = fragrance_aroma, body = mouthfeel,uniformity = uniform_cup)
+raw_robusta <-
+  read_csv(
+    "https://raw.githubusercontent.com/jldbc/coffee-quality-database/master/data/robusta_data_cleaned.csv",
+    col_types = cols(
+      X1 = col_double(),
+      Species = col_character(),
+      Owner = col_character(),
+      Country.of.Origin = col_character(),
+      Farm.Name = col_character(),
+      Lot.Number = col_character(),
+      Mill = col_character(),
+      ICO.Number = col_character(),
+      Company = col_character(),
+      Altitude = col_character(),
+      Region = col_character(),
+      Producer = col_character(),
+      Number.of.Bags = col_double(),
+      Bag.Weight = col_character(),
+      In.Country.Partner = col_character(),
+      Harvest.Year = col_character(),
+      Grading.Date = col_character(),
+      Owner.1 = col_character(),
+      Variety = col_character(),
+      Processing.Method = col_character(),
+      Fragrance...Aroma = col_double(),
+      Flavor = col_double(),
+      Aftertaste = col_double(),
+      Salt...Acid = col_double(),
+      Balance = col_double(),
+      Uniform.Cup = col_double(),
+      Clean.Cup = col_double(),
+      Bitter...Sweet = col_double(),
+      Cupper.Points = col_double(),
+      Total.Cup.Points = col_double(),
+      Moisture = col_double(),
+      Category.One.Defects = col_double(),
+      Quakers = col_double(),
+      Color = col_character(),
+      Category.Two.Defects = col_double(),
+      Expiration = col_character(),
+      Certification.Body = col_character(),
+      Certification.Address = col_character(),
+      Certification.Contact = col_character(),
+      unit_of_measurement = col_character(),
+      altitude_low_meters = col_double(),
+      altitude_high_meters = col_double(),
+      altitude_mean_meters = col_double()
+    )
+  ) %>%
+  janitor::clean_names() %>%
+  rename(
+    acidity = salt_acid,
+    sweetness = bitter_sweet,
+    aroma = fragrance_aroma,
+    body = mouthfeel,
+    uniformity = uniform_cup
+  )
 
 
-all_ratings <- bind_rows(raw_arabica, raw_robusta) %>% 
-  select(-x1) %>% 
+all_ratings <- bind_rows(raw_arabica, raw_robusta) %>%
+  select(-x1) %>%
   select(total_cup_points, species, everything())
 
-all_ratings %>% 
+all_ratings %>%
   skimr::skim()
 
-all_ratings %>% 
+all_ratings %>%
   write_csv("coffee_ratings.csv")
 ```
 
@@ -119,7 +130,9 @@ coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatasci
 ```
 
 
-# Data Exploration
+# Coffee quality across different countries
+
+### Data Exploration
 ```{r, include = FALSE}
 coffee_ratings %>% 
   group_by(species) %>% 
@@ -138,7 +151,7 @@ coffee_ratings %>%
   kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
-# Radar/ Spider/ Polar Chart
+### Radar/ Spider/ Polar Chart
 ```{r, warning = FALSE, message = FALSE}
 data <- coffee_ratings %>% 
   # select; relevant quantitative variables 
@@ -255,4 +268,136 @@ radarchart(data,
 
 
 
+# 1. Does processing method influence coffee flavours and quality?
 
+[Characteristics of coffee in different processing methods](https://capecoffeebeans.co.za/blogs/cape-coffee-blog/77091524-7-factors-that-influence-coffee-flavour)  
+1. Washed/Wet: Tend to have higher acidity and clarity  
+2. Natural/Dry: Traditional african method, tend to have fruity flavour and low acidity; Higher risk of crop spoilage.  
+3. Pulped natural/Honey: Collection of wet& dry methods  
+
+```{r clean-proc}
+proc_methods <- coffee_ratings %>%
+  # Remove NA in processing methods
+  filter(!is.na(processing_method),
+  # Remove processing method 'other'
+         !processing_method == "Other",
+         species == "Arabica") %>%
+  select(species, country_of_origin, processing_method:cupper_points, total_cup_points)
+```
+
+
+```{r proc-wider}
+proc_wider <- proc_methods %>%
+  # Group grade scores into one column
+  ## For plotting
+  pivot_longer(cols = aroma:cupper_points,
+               names_to = "grade",
+               values_to = "grade_score")
+```
+
+### Plot 1: Density Plot for Total Cup Points of each Processing Method
+
+```{r proc-density, message = FALSE}
+p1 <- proc_wider %>%
+  ggplot(aes(x = total_cup_points,
+             y = processing_method,
+             fill = processing_method)) +
+  xlab("Total Cup Points") +
+  stat_density_ridges(quantile_lines = TRUE,
+                      quantiles = 0.5,
+                      scale = 0.9,
+                      alpha = 0.5,
+                      point_shape = '|'
+                      ) +
+  scale_x_continuous(breaks = seq(50, 100, by = 5),
+                     labels = c(seq(50, 100, by = 5))) +
+  scale_fill_manual(values = c("#bcbc8f", "#8fbc8f", "#8f8fbc", "#bc8fbc")) +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.title = element_blank()) +
+  ggtitle("Total cup points distribution for each processing method") +
+  theme(plot.title = element_text(size = 10, face = "bold.italic"))
+
+p1
+```
+
+```{r proc_total_summary, message = FALSE}
+# Summarise total cup points for each processing method
+proc_total_summ <- proc_wider %>%
+  group_by(processing_method) %>%
+  summarise(count = n(),
+            avg_total_cup_pts = mean(total_cup_points)) %>%
+  # Round to 2 decimal places
+  mutate_if(is.numeric, round, 2) 
+```
+
+### Plot 2: Lollipop chart of each grade quality of each processing method
+
+```{r proc-summary, message = FALSE}
+# Mean grade score for each processing_method
+proc_summary <- proc_methods %>%
+  group_by(processing_method) %>%
+  summarise(across(.cols = aroma:cupper_points, .fns = mean)) %>%
+  ungroup() %>%
+  pivot_longer(cols = aroma:cupper_points,
+               names_to = "grade",
+               values_to = "avg_score")
+```
+
+```{r proc-lollipop, fig.width = 7, fig.height = 7}
+p2 <- proc_summary %>%
+  ggplot(aes(x = avg_score, 
+                 y = processing_method,
+                 colour = processing_method
+                 )) +
+  geom_segment(aes(x = 0,
+                   xend = avg_score,
+                   y = processing_method,
+                   yend = processing_method),
+               colour = "grey") +
+  xlab("Average Score") +
+  ylab("Processing Method") +
+  geom_point(
+             size = 8
+             ) +
+  geom_text(color = "white", size = 2, label = round(proc_summary$avg_score, 2)) +
+  scale_colour_manual(values = c("#bcbc8f", "#8fbc8f", "#8f8fbc", "#bc8fbc")) +
+  facet_wrap(~ grade,
+             nrow = 5
+             ) +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.title = element_blank()) +
+  ggtitle("Average Grade Score for Each Processing Method") +
+  theme(plot.title = element_text(size = 10, face = "bold.italic"))
+
+p2
+```
+
+### Merging plots 1 and 2
+
+```{r merge-plots, fig.height = 8, fig.width = 12, fig.align = "center"}
+ss <- proc_total_summ %>%
+  # Rename columns
+  rename('Processing Method' = processing_method,
+         'Coffee sampled' = count,
+         'Avg Total Cup Points'= avg_total_cup_pts)
+
+# Plot processing total cup points summary table with tableGrob
+ss <- tableGrob(ss, 
+                # Remove row numbers
+                rows = NULL) 
+
+## Combine plots and tables
+grid.arrange(p1,
+             ss,
+             p2,
+             ncol = 2,
+             nrow = 2, 
+             layout_matrix = cbind(c(1,2), 3), 
+             heights = c(10, 6),
+             widths = c(6, 7),
+             top= grid::textGrob("Coffee Quality of Arabica Coffee Beans Across Four Processing Methods",
+                                 gp=gpar(fontsize = 20, col = "#a15016", fontface="bold.italic"))
+             )
+```
