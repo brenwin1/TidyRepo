@@ -14,10 +14,11 @@ library(tidyverse)
 library(fmsb) # for radarchart
 library(colormap)
 library(knitr)
+library(readr)
 ```
 
 
-```{r gettingthedata, include = FALSE}
+```{r gettingthedata, eval = FALSE, include = FALSE}
 # Get the Data
 
 # Read in with tidytuesdayR package 
@@ -108,6 +109,16 @@ all_ratings %>%
   write_csv("coffee_ratings.csv")
 ```
 
+```{r readindata, include = FALSE}
+coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv') %>% 
+  # US; only Hawaii produce coffee
+  mutate(country_of_origin = case_when(
+    country_of_origin == "United States" ~ "United States (Hawaii)",
+    TRUE ~ country_of_origin
+  ))
+```
+
+
 # Data Exploration
 ```{r, include = FALSE}
 coffee_ratings %>% 
@@ -128,7 +139,7 @@ coffee_ratings %>%
 ```
 
 # Radar/ Spider/ Polar Chart
-```{r}
+```{r, warning = FALSE, message = FALSE}
 data <- coffee_ratings %>% 
   # select; relevant quantitative variables 
   select(country_of_origin, 
@@ -159,7 +170,7 @@ data <- data %>%
 data <- rbind(rep(10, 10), rep(0, 10), data)
 ```
 
-```{r, fig.height = 7}
+```{r, out.height = "400%", fig.width = 10}
 # •specify polygon fill colour (brown coffee colour)
 col2rgb("#8b4513") # find rgb of brown @ https://www.colorhexa.com/8b4513
 
@@ -175,6 +186,7 @@ title <- c("Brazil", "China", "Columbia", "Costa Rica", "El Salvador", "Ethopia"
 # •split the screen in 6 parts
 par(mar = rep(0.8,4))
 par(mfrow = c(4,6))
+
 
 # •create seperate radar charts; using `for loop`
 for(i in 1:19){
