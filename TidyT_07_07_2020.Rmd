@@ -6,12 +6,43 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
-```{r cleaningscript}
+```{r libraries, include = FALSE}
 library(tidyverse)
+library(fmsb) # for radarchart
+library(colormap)
+library(knitr)
+```
 
+
+```{r gettingthedata, include = FALSE}
+# Get the Data
+
+# Read in with tidytuesdayR package 
+# Install from CRAN via: install.packages("tidytuesdayR")
+# This loads the readme and all the datasets for the week of interest
+
+# Either ISO-8601 date or year/week works!
+
+tuesdata <- tidytuesdayR::tt_load('2020-07-07')
+tuesdata <- tidytuesdayR::tt_load(2020, week = 28)
+
+coffee_ratings <- tuesdata$coffee_ratings
+
+# Or read in the data manually
+
+coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv') %>% 
+  # US; only Hawaii produce coffee
+  mutate(country_of_origin = case_when(
+    country_of_origin == "United States" ~ "United States (Hawaii)",
+    TRUE ~ country_of_origin
+  ))
+```
+
+```{r cleaningscript, eval = FALSE, include = FALSE}
+# provided @ https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-07-07
 raw_arabica <- read_csv("https://raw.githubusercontent.com/jldbc/coffee-quality-database/master/data/arabica_data_cleaned.csv") %>% 
   janitor::clean_names()
 
@@ -76,4 +107,140 @@ all_ratings %>%
 all_ratings %>% 
   write_csv("coffee_ratings.csv")
 ```
+
+# Data Exploration
+```{r, include = FALSE}
+coffee_ratings %>% 
+  group_by(species) %>% 
+  count(species)
+```
+- Note Species in dataset
+  - Arabica: 1311 observations // Robusta 28 observations
+
+```{r, echo = FALSE}
+# Where are most samples from?
+coffee_ratings %>% 
+  filter(!is.na(country_of_origin)) %>% 
+  group_by(country_of_origin) %>% 
+  count(sort = TRUE) %>% 
+  knitr::kable(caption = "where are most samples from?") %>% 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+# Radar/ Spider/ Polar Chart
+```{r}
+data <- coffee_ratings %>% 
+  # select; relevant quantitative variables 
+  select(country_of_origin, 
+         aroma, 
+         flavor, 
+         aftertaste, 
+         acidity, 
+         body, 
+         balance, 
+         uniformity, 
+         clean_cup, 
+         sweetness, 
+         cupper_points) 
+  
+# compute median for each category; for each country
+data <- data %>% 
+  group_by(country_of_origin) %>% 
+  filter(n() > 10) %>% # filter where coffee sample > 10
+  summarise(across(.cols = where(is.numeric), .fns = median)) # summarise column where data type is numeric
+
+# • change 1st column into rownames 
+# --> *radarchart; require; all columns; be numeric
+data <- data %>% 
+  remove_rownames %>% 
+  column_to_rownames(var = "country_of_origin")
+
+# •insert 1st 2 rows to be max & min of variable 
+data <- rbind(rep(10, 10), rep(0, 10), data)
+```
+
+```{r, fig.height = 7}
+# •specify polygon fill colour (brown coffee colour)
+col2rgb("#8b4513") # find rgb of brown @ https://www.colorhexa.com/8b4513
+
+polygon_fill <- rgb(139, 69, 19, alpha = 0.5, maxColorValue = 140)
+# OR use
+polygon_fill <- adjustcolor("#8b4513", alpha.f = 0.6)
+
+
+
+# •prepare title *displayed at top of each radarchart
+title <- c("Brazil", "China", "Columbia", "Costa Rica", "El Salvador", "Ethopia", "Guatemala", "Hondurus", "India", "Indonesia", "Kenya", "Malawi", "Mexico", "Nicaragua", "Taiwan", "Tanzania", "Thailand", "Uganda", "United States (Hawaii)")
+
+# •split the screen in 6 parts
+par(mar = rep(0.8,4))
+par(mfrow = c(4,6))
+
+# •create seperate radar charts; using `for loop`
+for(i in 1:19){
+  radarchart(data[c(1,2,i+2),],
+             #customize polygon
+             pcol = "black", # polygon outline colour
+             pfcol = "#8B451399", # polygon fill colour
+             plwd = 2, # polygon line width/thickness
+             plty = 1, # polygon line type
+             
+             #customize grid (the "net")
+             cglcol = "black", # grid line colour
+             cglty = 1, # grid line type
+             axislabcol = "black", # axis label colour
+             caxislabels = seq(from = 0, to = 10, by = 2.5), # axos labels 
+             cglwd = 0.7, # net width
+             
+             #customize labels
+             vlcex = 0.8, # group/category label/font size
+             
+             # add title
+             title = title[i])
+}
+```
+
+> As observed in the radarcharts above, coffee profiles (depicted by the radar chart's shape) across countries appear similar. It is hard to tell for example Ethiopia is rated the highest across most categories. 
+
+> Median scores of each category in each country were used in the plot.
+
+
+```{r}
+# create radarchart; with ALL countries; on 1 radarchart
+
+# •create colour; for each country
+# -> specify polygon fill colour
+polygon_fill2 <- adjustcolor("#8b4513", alpha.f = 0.1)
+
+radarchart(data,
+           axistype = 1,
+           # customize polygon
+           pcol = "black", # polygon outline colour
+           pfcol = polygon_fill2, # polygon fill colour
+           plwd = 2, # polygon line width/thickness
+           plty = 1, # polygon line type
+           
+           #customize grid(the "net")
+           cglcol = "black", # grid line colour
+           cglty = 1,
+           axislabcol = "black", # axis label colours
+           caxislabels = seq(from = 0, to = 10, by = 2.5), # axis labels
+           cglwd = 0.7, # grid/net width
+           
+           # cutomize labels
+           vlcex = 0.8, #group/cateogry label/font size
+           
+           # add title
+           title = "All Countries"
+           )
+```
+
+> Supported by the radar chart above where radarcharts of individual countries are plotted overlapping one another, we see that there is very minor difference between countries.
+
+> All these despite having different growing conditions such as altitude, harvesting period, types/colour of coffee beans etc.
+
+> India scored 7.75 in sweetness while the rest of countries scored 10. 
+
+
+
 
