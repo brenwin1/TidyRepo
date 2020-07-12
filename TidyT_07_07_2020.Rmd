@@ -1,6 +1,6 @@
 ---
 title: "What affects the quality of coffee?"
-author: "Brendi"
+author: "Brendi & Brenwin"
 date: "07/07/2020"
 output: html_document
 ---
@@ -47,6 +47,7 @@ coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatasci
 
 ```{r cleaningscript, eval = FALSE, include = FALSE}
 # provided @ https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-07-07
+
 raw_arabica <- read_csv("https://raw.githubusercontent.com/jldbc/coffee-quality-database/master/data/arabica_data_cleaned.csv") %>% 
   janitor::clean_names()
 
@@ -132,7 +133,7 @@ coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatasci
 # Introduction
 As coffee aficionados, it always pique my curiousity as to what makes coffee better. 
 
-Luckily, we came across this coffee ratings data set from `#TidyTuesday` challenge which we knew we had to analyze the data. Data set consist of scores from coffee cupping(tasting) done by professionals (although one doesn't have to be a professional to do so).  
+Luckily, we came across this coffee ratings data set from `#TidyTuesday` challenge, we knew we had to analyze the data. Data set consist of scores from coffee cupping(tasting) done by professionals (although one doesn't have to be a professional to do so).  
 
 To do so, we compared coffee ratings across countries. Since the different countries have different harvesting periods, coffee bean types/colour, altitude, variety etc. 
 
@@ -196,8 +197,6 @@ col2rgb("#8b4513") # find rgb of brown @ https://www.colorhexa.com/8b4513
 polygon_fill <- rgb(139, 69, 19, alpha = 0.5, maxColorValue = 140)
 # OR use
 polygon_fill <- adjustcolor("#8b4513", alpha.f = 0.6)
-
-
 
 # •prepare title *displayed at top of each radarchart
 title <- c("Brazil", "China", "Columbia", "Costa Rica", "El Salvador", "Ethopia", "Guatemala", "Hondurus", "India", "Indonesia", "Kenya", "Malawi", "Mexico", "Nicaragua", "Taiwan", "Tanzania", "Thailand", "Uganda", "United States (Hawaii)")
@@ -273,7 +272,7 @@ All these despite having different growing conditions such as altitude, harvesti
 
 # Does processing method influence coffee flavours and quality?
 
-Next we asked ourselves: maybe processing method would make the difference? which led us to the following analysis. 
+Next we asked ourselves: maybe processing method would make a difference?; which led us to the following analysis. 
 
 We found different [characteristics of coffee using different processing methods](https://capecoffeebeans.co.za/blogs/cape-coffee-blog/77091524-7-factors-that-influence-coffee-flavour)  
 1. Washed/Wet: Tend to have higher acidity and clarity  
@@ -286,6 +285,7 @@ proc_methods <- coffee_ratings %>%
   filter(!is.na(processing_method),
   # Remove processing method 'other'
          !processing_method == "Other",
+  # Filter to only Arabica Coffee beans
          species == "Arabica") %>%
   select(species, country_of_origin, processing_method:cupper_points, total_cup_points)
 ```
@@ -293,8 +293,7 @@ proc_methods <- coffee_ratings %>%
 
 ```{r proc-wider, include = FALSE}
 proc_wider <- proc_methods %>%
-  # Group grade scores into one column
-  ## For plotting
+  # Group grade scores into one column, for plotting
   pivot_longer(cols = aroma:cupper_points,
                names_to = "grade",
                values_to = "grade_score")
@@ -308,15 +307,14 @@ p1 <- proc_wider %>%
   ggplot(aes(x = total_cup_points,
              y = processing_method,
              fill = processing_method)) +
-  xlab("Total Cup Points") +
   stat_density_ridges(quantile_lines = TRUE,
-                      quantiles = 0.5,
-                      scale = 0.9,
-                      alpha = 0.5,
-                      point_shape = '|'
+                      quantiles = 0.5, # Show median 
+                      scale = 0.9, # Remove overlaps between each plot
+                      alpha = 0.5
                       ) +
-  scale_x_continuous(breaks = seq(50, 100, by = 5),
-                     labels = c(seq(50, 100, by = 5))) +
+  # Set breaks and labels to a multiple of 5
+  scale_x_continuous(breaks = seq(50, 100, by = 5), 
+                     labels = c(seq(50, 100, by = 5))) + 
   scale_fill_manual(values = c("#bcbc8f", "#8fbc8f", "#8f8fbc", "#bc8fbc")) +
   theme_bw() +
   theme(legend.position = "none",
@@ -329,7 +327,8 @@ p1
 
 ```{r proc_total_summary, message = FALSE}
 # Summarise total cup points for each processing method
-proc_total_summ <- proc_wider %>%
+proc_total_summ <-
+  proc_wider %>%
   group_by(processing_method) %>%
   summarise(count = n(),
             avg_total_cup_pts = mean(total_cup_points)) %>%
@@ -337,21 +336,23 @@ proc_total_summ <- proc_wider %>%
   mutate_if(is.numeric, round, 2) 
 ```
 
-
 ```{r proc-summary, message = FALSE}
 # Plot 2: Lollipop chart of each grade quality of each processing method
 
-# Mean grade score for each processing_method
+# Average grade score for each processing_method
 proc_summary <- proc_methods %>%
   group_by(processing_method) %>%
   summarise(across(.cols = aroma:cupper_points, .fns = mean)) %>%
   ungroup() %>%
+  # Group grade into one column, for plotting
   pivot_longer(cols = aroma:cupper_points,
                names_to = "grade",
                values_to = "avg_score")
 ```
 
-```{r proc-lollipop, fig.width = 7, fig.height = 7}
+```{r proc-lollipop, fig.width = 7, fig.height = 7, include = FALSE}
+# Lollipop chart
+
 p2 <- proc_summary %>%
   ggplot(aes(x = avg_score, 
                  y = processing_method,
@@ -364,10 +365,12 @@ p2 <- proc_summary %>%
                colour = "grey") +
   xlab("Average Score") +
   ylab("Processing Method") +
-  geom_point(
-             size = 8
-             ) +
-  geom_text(color = "white", size = 2, label = round(proc_summary$avg_score, 2)) +
+  geom_point(size = 8) + 
+  # Insert avg score in dot point
+  geom_text(color = "white", 
+            size = 2, 
+            label = round(proc_summary$avg_score, 2)) +
+  # Colour consistent with plot 1
   scale_colour_manual(values = c("#bcbc8f", "#8fbc8f", "#8f8fbc", "#bc8fbc")) +
   facet_wrap(~ grade,
              nrow = 5
@@ -382,18 +385,20 @@ p2
 ```
 
 ```{r merge-plots, fig.height = 8, fig.width = 12, fig.align = "center"}
+# Combine plot 1 and plot 2
+
 ss <- proc_total_summ %>%
-  # Rename columns
+  # Rename columns for better presentation
   rename('Processing Method' = processing_method,
          'Coffee sampled' = count,
          'Avg Total Cup Points'= avg_total_cup_pts)
 
-# Plot processing total cup points summary table with tableGrob
-ss <- tableGrob(ss, 
-                # Remove row numbers
-                rows = NULL) 
+# Plot summary table of processing total cup points with tableGrob
+ss <- gridExtra::tableGrob(ss, 
+                           # Remove row numbers
+                           rows = NULL) 
 
-## Combine plots and tables
+## Combine plot 1, plot 2 and table
 grid.arrange(p1,
              ss,
              p2,
@@ -406,7 +411,8 @@ grid.arrange(p1,
                                  gp=gpar(fontsize = 20, col = "#a15016", fontface="bold.italic"))
              )
 ```
-To our surprise, all processing method fared almost similarly! As shown on left-side figure, Washed/Wet and Natural/Dry are less erratic, they have almost equal average scores. 
+
+To our surprise, all processing method fared similarly! As shown on left-side figure, Washed/Wet and Natural/Dry are less erratic even though more coffee samples were carried out. All processing methods have almost equal average scores. 
 
 We then break them down into the different categories. They also achieved very similar scores in all categories!
 
