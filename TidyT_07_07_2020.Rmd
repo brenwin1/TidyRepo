@@ -131,16 +131,17 @@ coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatasci
 ```
 
 # Introduction
-As coffee aficionados, it always pique my curiousity as to what makes coffee better. 
+As coffee aficionados, it has always pique our curiousity as to what makes coffee better. 
 
-Luckily, we came across this coffee ratings data set from `#TidyTuesday` challenge, we knew we had to analyze the data. Data set consist of scores from coffee cupping(tasting) done by professionals (although one doesn't have to be a professional to do so).  
+Lucky for us, we came across this coffee ratings data set from [`#TidyTuesday` challenge](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-07-07), we knew we had to play around with the data. 
 
-To do so, we compared coffee ratings across countries. Since the different countries have different harvesting periods, coffee bean types/colour, altitude, variety etc. 
+This data set consist of data from coffee cupping(tasting) done by professionals (although one doesn't have to be a professional to do so). Including scores in categories such as aroma, flavor, acidity, aftertaste and overall score (cupper points).
+
+In our analysis, we compared coffee ratings across countries. Since different countries have different harvesting periods, coffee bean types/colour, altitude, variety etc. 
 
 
 # Coffee quality across different countries
 
-### Data Exploration
 ```{r, include = FALSE}
 coffee_ratings %>% 
   group_by(species) %>% 
@@ -231,8 +232,9 @@ for(i in 1:19){
 ```
 
 As observed in the radarcharts above, coffee profiles (depicted by the radar chart's shape) across countries appear very similar!   
-It is hard to tell for example Ethiopia is rated the highest across most categories.   
-Median scores of each category in each country were used in the plot.
+It is hard to tell for example Ethiopia was rated the highest across most categories.   
+
+Median scores of each category in each country were used in the plot. We also sieved out to countries with more than 10 coffee sampled.
 
 
 ```{r}
@@ -265,7 +267,7 @@ radarchart(data,
            )
 ```
 
-Supported by the radar chart above where radarcharts of individual countries are plotted overlapping one another. It is pretty difficult to tell difference in quality between countries since they all overlap very nicely. This implies a similar coffee profile in all the countries.
+To confirm the hypothesis, we overlapped individual country's coffee profiles. From here, it is pretty difficult to tell difference in quality between countries since they all overlap very nicely. This implies a similar coffee profile in all the countries in the.
 
 All these despite having different growing conditions such as altitude, harvesting period, types/colour of coffee beans, variety of beans etc.
 
@@ -418,7 +420,7 @@ We then break them down into the different categories. They also achieved very s
 
 
 # Conclusion
-We found that coffee beans performed rather similarly regardless of different factors in growing coffee beans across countries and even processing method. The best rated coffee beans only scored better by a small margin. In other words, coffee is coffee! 
+In our simple analysis, we found that coffee beans performed rather similarly regardless of different factors in growing coffee beans across countries and even processing method. The best rated coffee beans only scored better by a small margin. In other words, coffee is coffee! 
 
 
 
