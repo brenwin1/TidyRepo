@@ -260,7 +260,7 @@ radarchart(data,
            cglwd = 0.7, # grid/net width
            
            # cutomize labels
-           vlcex = 0.8, #group/cateogry label/font size
+           vlcex = 2, #group/cateogry label/font size
            
            # add title
            title = "All Countries"
