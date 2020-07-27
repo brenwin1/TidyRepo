@@ -26,7 +26,7 @@ all_complaints <- list.files("2020/2020-07-21/raw_csv") %>%
   })
 
 brisbane_complaints <- all_complaints %>% 
-  mutate(date_range = str_remove(date_range, "animal-compliance-|cars-bis-open-data-animal-related-complaints-")) %>% 
+  mutate(date_range = str_remove(date_range, "animal-compliance-|cars-bis-open-data-animal-related-complaints-")) %>%
   set_names(nm= c("nature", "animal_type", "category", "suburb", "date_range", "responsible_office")) %>% 
   mutate(city = "Brisbane")
 
@@ -352,5 +352,16 @@ animal_outcomes <- readr::read_csv('https://raw.githubusercontent.com/rfordatasc
 animal_complaints <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_complaints.csv')
 brisbane_complaints <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/brisbane_complaints.csv')
 ```
+
+
+# RSPCA
+
+- Animal Shelter rescue, rehabilitate and rehome animals
+
+
+
+
+
+
 
 
