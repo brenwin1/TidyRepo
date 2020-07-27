@@ -9,6 +9,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r libraries}
+library(tidyverse)
+```
+
+
 ```{r cleaningscript, eval = FALSE}
 library(tidyverse)
 library(pdftools)
@@ -26,7 +31,7 @@ all_complaints <- list.files("2020/2020-07-21/raw_csv") %>%
   })
 
 brisbane_complaints <- all_complaints %>% 
-  mutate(date_range = str_remove(date_range, "animal-compliance-|cars-bis-open-data-animal-related-complaints-")) %>% 
+  mutate(date_range = str_remove(date_range, "animal-compliance-|cars-bis-open-data-animal-related-complaints-")) %>%
   set_names(nm= c("nature", "animal_type", "category", "suburb", "date_range", "responsible_office")) %>% 
   mutate(city = "Brisbane")
 
@@ -349,8 +354,76 @@ clean_data %>%
 # Or read in the data manually
 
 animal_outcomes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_outcomes.csv')
+
 animal_complaints <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_complaints.csv')
-brisbane_complaints <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/brisbane_complaints.csv')
+
+brisbane_complaints <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/brisbane_complaints.csv') %>% 
+  select(-responsible_office) # all NAs
 ```
+
+# Data Exploration
+
+## animal_outcomes
+```{r}
+unique(animal_outcomes$animal_type)
+unique(animal_outcomes$outcome)
+```
+
+```{r}
+outcome_dogs <- animal_outcomes %>% 
+  filter(animal_type == "Dogs") %>% 
+  pivot_longer(cols = ACT:WA,
+               names_to = "States",
+               values_to = "count")
+
+outcome_dogs %>% 
+  ggplot(aes(x = year,
+             y = count)) +
+  geom_line(aes(colour = States)) +
+  facet_grid(States ~ outcome)
+  
+```
+
+
+
+
+
+## complaints
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# RSPCA
+
+- Animal Shelter rescue, rehabilitate and rehome animals
+
+
+
+
+
+
 
 
