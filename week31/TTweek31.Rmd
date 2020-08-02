@@ -11,6 +11,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r library, include = FALSE}
 library(tidyverse)
+library(cowplot)
+library(jpeg)
+library(ggpubr)
+library(ggridges)
+library(gridExtra)
+library(here)
 ```
 
 ```{r read-data, include = FALSE}
@@ -30,60 +36,17 @@ penguins_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascien
 - Does the body mass of penguins correlate with the size of flippers?
 - Do these sizes differ for each species across different islands? What about for males& females?
 
-## Research Q1: Does the body mass of penguins correlate with the size of flippers?
+## Research Q: Does the body mass of penguins correlate with the size of flippers?
 
-- Plot bubble graph, x-axis = length of flipper, y-axis = depth of flipper, size = body mass
-- Above bubble graph, plot histogram or density graph(?)
-
-```{r scatter-plot, warning=FALSE}
-penguins %>%
-  ggplot(aes(x = body_mass_g,
-             colour = species)
-         ) +
-  # Flippers length
-  geom_point(aes(y = flipper_length_mm),
-             alpha = 0.5,
-             size = 1) +
-  stat_smooth(aes(y= flipper_length_mm),
-              geom = "line",
-              alpha = 0.5,
-              size = 1,
-              method = "lm", 
-              se = FALSE) +
-  # Bill depth
-  geom_point(aes(y = bill_length_mm),
-             alpha = 0.5) +
-    stat_smooth(aes(y= bill_length_mm),
-              geom = "line",
-              alpha = 0.5,
-              size = 1,
-              method = "lm", 
-              se = FALSE) +
-  # Bill length 
-    geom_point(aes(y = bill_depth_mm),
-             alpha = 0.5) +
-    stat_smooth(aes(y= bill_depth_mm),
-              geom = "line",
-              alpha = 0.5,
-              size = 1,
-              method = "lm", 
-              se = FALSE) +
-  facet_wrap(~ species,
-             nrow = 1) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-```
-
-
-```{r}
+```{r penguins-long}
 penguins_long <- penguins %>%
   pivot_longer(bill_length_mm:flipper_length_mm,
                names_to = "attributes",
                values_to = "measurement")
 ```
 
-```{r scatter-plot, warning = FALSE, message = FALSE}
-penguins_long %>%
+```{r scatter-plot, warning = FALSE, message = FALSE, fig.align = "center", fig.height = 6, fig.width = 10}
+p1 <- penguins_long %>%
   ggplot(aes(x = body_mass_g,
              y = measurement)) +
   geom_point(alpha = 0.6,
@@ -91,30 +54,69 @@ penguins_long %>%
   scale_colour_manual(values = c("#d3d3d3", "#e3c5c0", "#c0e3d7")) +
   facet_wrap(~ attributes,
              scales = "free_y") +
+  labs(x = "body mass (g)",
+       y = "") +
   theme_classic() +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "none") + 
   stat_smooth(aes(y = measurement, colour = species),
     method = "lm", 
     geom = "line",
-    size = 1) 
+    size = 1) +
+  ggtitle("Body Measurements of Adelie, Chinstrap& Gentoo Penguins by Body Mass")
 ```
 
-```{r density-graph}
-penguins_long %>%
+```{r density-graph, warning = FALSE, message = FALSE, fig.align = "center", fig.height = 6, fig.width = 10}
+p2 <- penguins_long %>%
   ggplot() +
-  ggridges::geom_density_ridges(aes(x = measurement,
-                                    y = species,
-                                    fill = species),
-                                stat = "binline",
-                                bins = 20,
-                                scale = 0.9,
-                                alpha = 0.8
-                                ) +
+  ggridges::geom_density_ridges(
+    aes(x = measurement,
+        y = species,
+        fill = species),
+    stat = "binline",
+    bins = 30, 
+    scale = 0.9,
+    alpha = 0.8
+  ) +
   scale_fill_manual(values = c("#d3d3d3", "#e3c5c0", "#c0e3d7")) +
-  facet_wrap(~ attributes,
-             scales = "free") +
+  facet_wrap( ~ attributes,
+              scales = "free") +
+  labs(x = "Measurement (mm)",
+       y = "") +
   theme_classic() +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  ggtitle("Density Distribution of Body Measurements of Adelie, Chinstrap& Gentoo Penguins")
+```
+
+```{r combine-graph-p1-p2, warning = FALSE, message = FALSE, fig.width = 12}
+p3 <- ggpubr::ggarrange(p2, 
+                        p1, 
+                  common.legend = TRUE,
+                  nrow = 2,
+                  legend = "bottom", # Common legend
+                  align = "hv") # Align plots horizontally& vertically
+```
+
+```{r include-image, fig.width = 10, fig.height = 5}
+require(cowplot)
+
+# Read in downloaded images
+penguins_jpg <- jpeg::readJPEG(here::here("week31/images/penguins_heights.jpg"))
+
+p4 <- ggdraw() +
+  draw_image(penguins_jpg, height = 0.9) +
+  draw_label(
+    "(image extracted from https://www.bas.ac.uk/wp-content/uploads/2015/04/Penguin-heights.jpg)",
+    size = 12,
+    fontface = "italic",
+    vjust = 32
+  )
+```
+
+```{r combine-all-graphs, fig.alian = "center", fig.height = 8, fig.width = 12}
+gridExtra::grid.arrange(p3, 
+                        p4, 
+                        ncol = 2,
+                        widths = c(12,8))
 ```
 
 
